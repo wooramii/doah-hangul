@@ -18,7 +18,7 @@
     --shadow: rgba(233,30,140,0.18);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Nanum Round Square', sans-serif; background: var(--pink-bg); min-height: 100vh; touch-action: none; }
+  body { font-family: 'Nanum Round Square', sans-serif; background: var(--pink-bg); min-height: 100vh; overflow-x: hidden; touch-action: pan-y; }
 
   .topbar { background: white; border-bottom: 3px solid var(--pink-light); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px var(--shadow); }
   .back-btn { background: var(--pink-pale); border: 2px solid var(--pink-light); border-radius: 50%; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--pink-deep); text-decoration: none; }
@@ -47,6 +47,7 @@
   .write-header::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg,var(--yellow),var(--pink-main),#FF8800); }
   .write-label { font-size: 0.85rem; color: var(--text-mid); margin-bottom: 4px; }
   .write-target { font-size: 3.2rem; font-weight: 800; color: var(--pink-deep); text-shadow: 2px 2px 0 var(--pink-light); display: inline-block; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  .listen-btn { margin-top: 10px; width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--pink-light); background: var(--pink-pale); font-size: 1.35rem; cursor: pointer; }
   @keyframes popIn { 0%{transform:scale(0.3);opacity:0;}100%{transform:scale(1);opacity:1;} }
 
   /* Canvas area */
@@ -66,7 +67,7 @@
     background: #FFFAF0;
     cursor: crosshair;
   }
-  canvas { display: block; width: 100%; }
+  canvas { display: block; width: 100%; touch-action: none; }
 
   /* Guide char behind canvas */
   .guide-char {
@@ -139,13 +140,14 @@
   <div class="game-area" id="gameArea">
     <div class="progress-row">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      <div class="progress-label" id="progressLabel">0 / 8</div>
+      <div class="progress-label" id="progressLabel">0 / 12</div>
     </div>
     <div class="stars-row" id="starsRow"></div>
 
     <div class="write-header">
       <div class="write-label">이 글자를 따라 써봐요!</div>
       <div class="write-target" id="targetChar">가</div>
+      <button class="listen-btn" onclick="replayQuestion()" aria-label="문제 다시 듣기">🔊</button>
     </div>
 
     <div class="canvas-card">
@@ -194,7 +196,8 @@ const CHARACTERS = [
   { name:'마시핑', svgBody:`<ellipse cx="100" cy="130" rx="45" ry="52" fill="#FF9966"/><ellipse cx="100" cy="78" rx="38" ry="36" fill="#FFE8D5"/><circle cx="70" cy="48" r="20" fill="#FF9966"/><circle cx="130" cy="48" r="20" fill="#FF9966"/><circle cx="70" cy="48" r="12" fill="#FFD5B8"/><circle cx="130" cy="48" r="12" fill="#FFD5B8"/><circle cx="86" cy="76" r="6" fill="#3D1A2E"/><circle cx="114" cy="76" r="6" fill="#3D1A2E"/><circle cx="88" cy="74" r="2.5" fill="white"/><circle cx="116" cy="74" r="2.5" fill="white"/><circle cx="100" cy="88" r="6" fill="#CC4400"/><path d="M93 92 Q100 99 107 92" stroke="#992200" stroke-width="2" fill="none"/><ellipse cx="78" cy="84" rx="9" ry="6" fill="#FFB899" opacity="0.8"/><ellipse cx="122" cy="84" rx="9" ry="6" fill="#FFB899" opacity="0.8"/><ellipse cx="52" cy="120" rx="23" ry="12" fill="#FFD5B8" opacity="0.85" transform="rotate(-28,52,120)"/><ellipse cx="148" cy="120" rx="23" ry="12" fill="#FFD5B8" opacity="0.85" transform="rotate(28,148,120)"/><line x1="58" y1="122" x2="36" y2="97" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/><line x1="142" y1="122" x2="164" y2="97" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/><line x1="88" y1="178" x2="82" y2="205" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/><line x1="112" y1="178" x2="118" y2="205" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/>` }
 ];
 
-const ALL_QUESTIONS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
+const ALL_QUESTIONS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하','고','도','모','보','소','우'];
+const QUESTION_COUNT = 12;
 
 let questions, current, score, correctCount;
 let isDrawing = false, lastX = 0, lastY = 0;
@@ -272,7 +275,7 @@ function checkDrawing(){
     score+=10; correctCount++;
     document.getElementById('scoreDisplay').textContent=score;
     document.getElementById('star'+current).classList.add('earned');
-    playSound(true); spawnConfetti();
+    playSound(true); playFanfare(); spawnConfetti();
     // Flash canvas green
     ctx.fillStyle='rgba(168,237,207,0.35)';
     ctx.fillRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
@@ -287,33 +290,38 @@ function checkDrawing(){
       score+=5; correctCount++;
       document.getElementById('scoreDisplay').textContent=score;
       document.getElementById('star'+current).classList.add('earned');
+      speak('잘했어요');
       showDancer();
     },800);
   }
 }
 
-function nextQuestion(){current++;if(current>=8){showResult();return;}setupCanvas();showQuestion();}
+function nextQuestion(){current++;if(current>=QUESTION_COUNT){showResult();return;}setupCanvas();showQuestion();}
 
 function initGame(){
-  questions=shuffle(ALL_QUESTIONS).slice(0,8);
+  questions=shuffle(ALL_QUESTIONS).slice(0,QUESTION_COUNT);
   current=0;score=0;correctCount=0;
   document.getElementById('gameArea').style.display='flex';
   document.getElementById('resultScreen').classList.remove('show');
   document.getElementById('scoreDisplay').textContent='0';
   const sr=document.getElementById('starsRow');sr.innerHTML='';
-  for(let i=0;i<8;i++){const s=document.createElement('span');s.className='star';s.textContent='⭐';s.id='star'+i;sr.appendChild(s);}
+  for(let i=0;i<QUESTION_COUNT;i++){const s=document.createElement('span');s.className='star';s.textContent='⭐';s.id='star'+i;sr.appendChild(s);}
   setupCanvas();
   showQuestion();
 }
 
 function showQuestion(){
   const q=questions[current];
-  document.getElementById('progressFill').style.width=(current/8*100)+'%';
-  document.getElementById('progressLabel').textContent=current+' / 8';
+  document.getElementById('progressFill').style.width=(current/QUESTION_COUNT*100)+'%';
+  document.getElementById('progressLabel').textContent=current+' / '+QUESTION_COUNT;
   const tc=document.getElementById('targetChar');
   tc.textContent=q; tc.style.animation='none'; void tc.offsetWidth; tc.style.animation='popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+  tc.onclick=()=>speak(q);
   document.getElementById('guideChar').textContent=q;
+  speak(`${q} 따라 써봐요`);
 }
+
+function replayQuestion(){speak(`${questions[current]} 따라 써봐요`);}
 
 function showDancer(){
   const char=CHARACTERS[Math.floor(Math.random()*CHARACTERS.length)];
@@ -337,6 +345,16 @@ function spawnConfetti(){
   }
 }
 let audioCtx;
+function speak(text){
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ko-KR';
+    u.rate=0.85;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
 function playSound(correct){
   try{
     if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -346,6 +364,20 @@ function playSound(correct){
     else{osc.frequency.setValueAtTime(300,audioCtx.currentTime);osc.frequency.setValueAtTime(250,audioCtx.currentTime+0.15);}
     gain.gain.setValueAtTime(0.3,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
     osc.start();osc.stop(audioCtx.currentTime+0.4);
+  }catch(e){}
+}
+
+function playFanfare(){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    [523,659,784,1046].forEach((freq,i)=>{
+      const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();
+      osc.connect(gain);gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(freq,audioCtx.currentTime+i*0.09);
+      gain.gain.setValueAtTime(0.16,audioCtx.currentTime+i*0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+i*0.09+0.22);
+      osc.start(audioCtx.currentTime+i*0.09);osc.stop(audioCtx.currentTime+i*0.09+0.24);
+    });
   }catch(e){}
 }
 

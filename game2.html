@@ -64,6 +64,7 @@
   .q-target { font-size: 3.5rem; font-weight: 800; color: var(--pink-deep); animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); display: inline-block; }
   @keyframes popIn { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
   .q-hint { font-size: 1rem; font-weight: 700; color: var(--text-dark); margin-top: 8px; }
+  .listen-btn { margin-top: 12px; width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--pink-light); background: var(--pink-pale); font-size: 1.35rem; cursor: pointer; }
 
   /* Slot display */
   .slot-area {
@@ -172,7 +173,7 @@
   <div class="game-area" id="gameArea">
     <div class="progress-row">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      <div class="progress-label" id="progressLabel">0 / 8</div>
+      <div class="progress-label" id="progressLabel">0 / 12</div>
     </div>
     <div class="stars-row" id="starsRow"></div>
 
@@ -187,6 +188,7 @@
         <div class="slot-result" id="slotResult">?</div>
       </div>
       <div class="q-hint" id="qHint">자음과 모음을 각각 하나씩 골라봐요!</div>
+      <button class="listen-btn" onclick="replayQuestion()" aria-label="문제 다시 듣기">🔊</button>
     </div>
 
     <div class="choices-section">
@@ -234,23 +236,30 @@ const VOWELS = ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ'];
 const ALL_QUESTIONS = [
   { char:'나', con:'ㄴ', vow:'ㅏ' },
   { char:'가', con:'ㄱ', vow:'ㅏ' },
+  { char:'다', con:'ㄷ', vow:'ㅏ' },
+  { char:'라', con:'ㄹ', vow:'ㅏ' },
   { char:'도', con:'ㄷ', vow:'ㅗ' },
   { char:'무', con:'ㅁ', vow:'ㅜ' },
+  { char:'루', con:'ㄹ', vow:'ㅜ' },
   { char:'비', con:'ㅂ', vow:'ㅣ' },
   { char:'소', con:'ㅅ', vow:'ㅗ' },
+  { char:'수', con:'ㅅ', vow:'ㅜ' },
   { char:'요', con:'ㅇ', vow:'ㅛ' },
   { char:'지', con:'ㅈ', vow:'ㅣ' },
   { char:'코', con:'ㅋ', vow:'ㅗ' },
   { char:'하', con:'ㅎ', vow:'ㅏ' },
+  { char:'파', con:'ㅍ', vow:'ㅏ' },
+  { char:'토', con:'ㅌ', vow:'ㅗ' },
 ];
 
+const QUESTION_COUNT = 12;
 let questions, current, score, correctCount;
 let selectedCon = null, selectedVow = null;
 
 function shuffle(arr) { return [...arr].sort(() => Math.random()-0.5); }
 
 function initGame() {
-  questions = shuffle(ALL_QUESTIONS).slice(0,8);
+  questions = shuffle(ALL_QUESTIONS).slice(0,QUESTION_COUNT);
   current = 0; score = 0; correctCount = 0;
   selectedCon = null; selectedVow = null;
   document.getElementById('gameArea').style.display = 'flex';
@@ -259,7 +268,7 @@ function initGame() {
 
   const sr = document.getElementById('starsRow');
   sr.innerHTML = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < QUESTION_COUNT; i++) {
     const s = document.createElement('span');
     s.className = 'star'; s.textContent = '⭐'; s.id = 'star'+i;
     sr.appendChild(s);
@@ -271,11 +280,12 @@ function showQuestion() {
   const q = questions[current];
   selectedCon = null; selectedVow = null;
 
-  document.getElementById('progressFill').style.width = (current/8*100)+'%';
-  document.getElementById('progressLabel').textContent = current+' / 8';
+  document.getElementById('progressFill').style.width = (current/QUESTION_COUNT*100)+'%';
+  document.getElementById('progressLabel').textContent = current+' / '+QUESTION_COUNT;
 
   const tc = document.getElementById('targetChar');
   tc.textContent = q.char;
+  tc.onclick = () => speak(q.char);
   tc.style.animation = 'none'; void tc.offsetWidth; tc.style.animation = 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
 
   document.getElementById('slotCon').textContent = '?';
@@ -285,6 +295,7 @@ function showQuestion() {
   document.getElementById('slotResult').textContent = '?';
   document.getElementById('slotResult').classList.remove('filled');
   document.getElementById('qHint').textContent = '자음과 모음을 각각 하나씩 골라봐요!';
+  speak(`${q.char} 만들어봐요`);
 
   // Consonant choices: correct + 5 others
   const conOthers = shuffle(CONSONANTS.filter(c => c !== q.con)).slice(0,5);
@@ -294,7 +305,7 @@ function showQuestion() {
   conChoices.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn'; btn.textContent = c; btn.dataset.type = 'con'; btn.dataset.val = c;
-    btn.onclick = () => selectPiece(btn, 'con', c);
+    btn.onclick = () => { speak(c); selectPiece(btn, 'con', c); };
     cg.appendChild(btn);
   });
 
@@ -306,9 +317,13 @@ function showQuestion() {
   vowChoices.forEach(v => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn'; btn.textContent = v; btn.dataset.type = 'vow'; btn.dataset.val = v;
-    btn.onclick = () => selectPiece(btn, 'vow', v);
+    btn.onclick = () => { speak(v); selectPiece(btn, 'vow', v); };
     vg.appendChild(btn);
   });
+}
+
+function replayQuestion() {
+  speak(`${questions[current].char} 만들어봐요`);
 }
 
 function selectPiece(btn, type, val) {
@@ -345,6 +360,7 @@ function checkAnswer() {
     document.getElementById('scoreDisplay').textContent = score;
     document.getElementById('star'+current).classList.add('earned');
     playSound(true);
+    playFanfare();
     spawnConfetti();
     setTimeout(showDancer, 400);
   } else {
@@ -358,7 +374,7 @@ function checkAnswer() {
   }
 }
 
-function nextQuestion() { current++; if (current >= 8) { showResult(); return; } showQuestion(); }
+function nextQuestion() { current++; if (current >= QUESTION_COUNT) { showResult(); return; } showQuestion(); }
 
 function showDancer() {
   const char = CHARACTERS[Math.floor(Math.random()*CHARACTERS.length)];
@@ -383,6 +399,16 @@ function spawnConfetti() {
 }
 
 let audioCtx;
+function speak(text) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ko-KR';
+    u.rate = 0.85;
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
 function playSound(correct) {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -392,6 +418,20 @@ function playSound(correct) {
     else { osc.frequency.setValueAtTime(300,audioCtx.currentTime); osc.frequency.setValueAtTime(250,audioCtx.currentTime+0.15); }
     gain.gain.setValueAtTime(0.3,audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
     osc.start(); osc.stop(audioCtx.currentTime+0.4);
+  } catch(e){}
+}
+
+function playFanfare() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    [523,659,784,1046].forEach((freq,i)=>{
+      const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(freq,audioCtx.currentTime+i*0.09);
+      gain.gain.setValueAtTime(0.16,audioCtx.currentTime+i*0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+i*0.09+0.22);
+      osc.start(audioCtx.currentTime+i*0.09); osc.stop(audioCtx.currentTime+i*0.09+0.24);
+    });
   } catch(e){}
 }
 

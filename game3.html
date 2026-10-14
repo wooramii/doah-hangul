@@ -51,6 +51,7 @@
   @keyframes picPop { 0%{transform:scale(0.3) rotate(-15deg);opacity:0;} 100%{transform:scale(1) rotate(0);opacity:1;} }
   .pic-hint { font-size: 0.85rem; color: var(--text-mid); margin-bottom: 4px; }
   .pic-question { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); }
+  .listen-btn { margin-top: 12px; width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--pink-light); background: var(--pink-pale); font-size: 1.35rem; cursor: pointer; }
 
   /* Word choices */
   .word-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
@@ -113,7 +114,7 @@
   <div class="game-area" id="gameArea">
     <div class="progress-row">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      <div class="progress-label" id="progressLabel">0 / 8</div>
+      <div class="progress-label" id="progressLabel">0 / 12</div>
     </div>
     <div class="stars-row" id="starsRow"></div>
 
@@ -121,6 +122,7 @@
       <div class="pic-hint">이 그림의 이름을 골라봐요!</div>
       <div class="pic-emoji" id="picEmoji">🍎</div>
       <div class="pic-question" id="picQuestion">이것의 이름은 무엇일까요?</div>
+      <button class="listen-btn" onclick="replayQuestion()" aria-label="문제 다시 듣기">🔊</button>
     </div>
 
     <div class="word-grid" id="wordGrid"></div>
@@ -168,38 +170,51 @@ const ALL_QUESTIONS = [
   { emoji:'🐰', answer:'토끼', distractors:['곰','사자','코끼리'] },
   { emoji:'🍓', answer:'딸기', distractors:['포도','수박','복숭아'] },
   { emoji:'🎀', answer:'리본', distractors:['꽃','별','하트'] },
+  { emoji:'☀️', answer:'해', distractors:['달','별','구름'] },
+  { emoji:'🌙', answer:'달', distractors:['해','별','무지개'] },
+  { emoji:'🐘', answer:'코끼리', distractors:['토끼','곰','사자'] },
+  { emoji:'🚂', answer:'기차', distractors:['자동차','배','비행기'] },
+  { emoji:'🍉', answer:'수박', distractors:['딸기','사과','바나나'] },
+  { emoji:'🐻', answer:'곰', distractors:['토끼','고양이','강아지'] },
 ];
 
+const QUESTION_COUNT = 12;
 let questions, current, score, correctCount;
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
 
 function initGame() {
-  questions = shuffle(ALL_QUESTIONS).slice(0,8);
+  questions = shuffle(ALL_QUESTIONS).slice(0,QUESTION_COUNT);
   current=0; score=0; correctCount=0;
   document.getElementById('gameArea').style.display='flex';
   document.getElementById('resultScreen').classList.remove('show');
   document.getElementById('scoreDisplay').textContent='0';
   const sr=document.getElementById('starsRow'); sr.innerHTML='';
-  for(let i=0;i<8;i++){const s=document.createElement('span');s.className='star';s.textContent='⭐';s.id='star'+i;sr.appendChild(s);}
+  for(let i=0;i<QUESTION_COUNT;i++){const s=document.createElement('span');s.className='star';s.textContent='⭐';s.id='star'+i;sr.appendChild(s);}
   showQuestion();
 }
 
 function showQuestion() {
   const q=questions[current];
-  document.getElementById('progressFill').style.width=(current/8*100)+'%';
-  document.getElementById('progressLabel').textContent=current+' / 8';
+  document.getElementById('progressFill').style.width=(current/QUESTION_COUNT*100)+'%';
+  document.getElementById('progressLabel').textContent=current+' / '+QUESTION_COUNT;
   const pe=document.getElementById('picEmoji');
   pe.textContent=q.emoji; pe.style.animation='none'; void pe.offsetWidth; pe.style.animation='picPop 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+  pe.onclick=()=>speak(q.answer);
   document.getElementById('picQuestion').textContent='이것의 이름은 무엇일까요?';
+  speak(`이 그림의 이름은 무엇일까요?`);
 
   const choices=shuffle([q.answer,...shuffle(q.distractors).slice(0,3)]);
   const grid=document.getElementById('wordGrid'); grid.innerHTML='';
   choices.forEach(ch=>{
     const btn=document.createElement('button'); btn.className='word-btn';
     btn.innerHTML=`<span class="word-text">${ch}</span>`;
-    btn.onclick=()=>handleChoice(btn,ch,q.answer);
+    btn.onclick=()=>{speak(ch);handleChoice(btn,ch,q.answer);};
     grid.appendChild(btn);
   });
+}
+
+function replayQuestion(){
+  speak(`이 그림의 이름은 무엇일까요?`);
 }
 
 function handleChoice(btn,chosen,answer) {
@@ -208,7 +223,7 @@ function handleChoice(btn,chosen,answer) {
     btn.classList.add('correct'); score+=10; correctCount++;
     document.getElementById('scoreDisplay').textContent=score;
     document.getElementById('star'+current).classList.add('earned');
-    playSound(true); spawnConfetti(); setTimeout(showDancer,300);
+    playSound(true); playFanfare(); spawnConfetti(); setTimeout(showDancer,300);
   } else {
     btn.classList.add('wrong');
     document.querySelectorAll('.word-btn').forEach(b=>{if(b.querySelector('.word-text').textContent===answer) b.classList.add('correct');});
@@ -216,7 +231,7 @@ function handleChoice(btn,chosen,answer) {
   }
 }
 
-function nextQuestion(){current++;if(current>=8){showResult();return;}showQuestion();}
+function nextQuestion(){current++;if(current>=QUESTION_COUNT){showResult();return;}showQuestion();}
 
 function showDancer(){
   const char=CHARACTERS[Math.floor(Math.random()*CHARACTERS.length)];
@@ -240,6 +255,16 @@ function spawnConfetti(){
   }
 }
 let audioCtx;
+function speak(text){
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ko-KR';
+    u.rate=0.85;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
 function playSound(correct){
   try{
     if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -249,6 +274,19 @@ function playSound(correct){
     else{osc.frequency.setValueAtTime(300,audioCtx.currentTime);osc.frequency.setValueAtTime(250,audioCtx.currentTime+0.15);}
     gain.gain.setValueAtTime(0.3,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
     osc.start();osc.stop(audioCtx.currentTime+0.4);
+  }catch(e){}
+}
+function playFanfare(){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    [523,659,784,1046].forEach((freq,i)=>{
+      const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();
+      osc.connect(gain);gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(freq,audioCtx.currentTime+i*0.09);
+      gain.gain.setValueAtTime(0.16,audioCtx.currentTime+i*0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+i*0.09+0.22);
+      osc.start(audioCtx.currentTime+i*0.09);osc.stop(audioCtx.currentTime+i*0.09+0.24);
+    });
   }catch(e){}
 }
 function showResult(){

@@ -118,6 +118,15 @@
     margin-top: 8px;
     font-size: 1rem; font-weight: 700; color: var(--text-dark);
   }
+  .listen-btn {
+    margin-top: 12px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 3px solid var(--pink-light);
+    background: var(--pink-pale);
+    font-size: 1.35rem;
+    cursor: pointer;
+  }
 
   /* Grid of choices */
   .choices-grid {
@@ -298,7 +307,7 @@
   <div class="game-area" id="gameArea">
     <div class="progress-row">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      <div class="progress-label" id="progressLabel">0 / 8</div>
+      <div class="progress-label" id="progressLabel">0 / 12</div>
     </div>
 
     <div class="stars-row" id="starsRow"></div>
@@ -307,6 +316,7 @@
       <div class="q-hint">아래에서 이 글자를 찾아봐요!</div>
       <div class="q-target" id="targetChar">ㄱ</div>
       <div class="q-instruction" id="qInstruction">을 눌러봐요! 👆</div>
+      <button class="listen-btn" onclick="replayQuestion()" aria-label="문제 다시 듣기">🔊</button>
     </div>
 
     <div class="choices-grid" id="choicesGrid"></div>
@@ -490,13 +500,19 @@ const ALL_QUESTIONS = [
   { target: 'ㄱ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
   { target: 'ㄴ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
   { target: 'ㄷ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
+  { target: 'ㄹ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
+  { target: 'ㅁ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
+  { target: 'ㅅ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
   { target: 'ㅏ', pool: ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ','ㅐ','ㅔ','ㅒ','ㅖ','ㅘ','ㅙ'] },
+  { target: 'ㅓ', pool: ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ','ㅐ','ㅔ','ㅒ','ㅖ','ㅘ','ㅙ'] },
   { target: 'ㅣ', pool: ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ','ㅐ','ㅔ','ㅒ','ㅖ','ㅘ','ㅙ'] },
   { target: 'ㅂ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
   { target: 'ㅗ', pool: ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ','ㅐ','ㅔ','ㅒ','ㅖ','ㅘ','ㅙ'] },
+  { target: 'ㅜ', pool: ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ','ㅐ','ㅔ','ㅒ','ㅖ','ㅘ','ㅙ'] },
   { target: 'ㅎ', pool: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','ㄲ','ㅆ'] },
 ];
 
+const QUESTION_COUNT = 12;
 let questions = [];
 let current = 0;
 let score = 0;
@@ -505,7 +521,7 @@ let correctCount = 0;
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
 function initGame() {
-  questions = shuffle(ALL_QUESTIONS).slice(0, 8);
+  questions = shuffle(ALL_QUESTIONS).slice(0, QUESTION_COUNT);
   current = 0; score = 0; correctCount = 0;
   document.getElementById('gameArea').style.display = 'flex';
   document.getElementById('resultScreen').classList.remove('show');
@@ -514,7 +530,7 @@ function initGame() {
   // Stars
   const sr = document.getElementById('starsRow');
   sr.innerHTML = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < QUESTION_COUNT; i++) {
     const s = document.createElement('span');
     s.className = 'star'; s.textContent = '⭐'; s.id = 'star' + i;
     sr.appendChild(s);
@@ -524,14 +540,16 @@ function initGame() {
 
 function showQuestion() {
   const q = questions[current];
-  document.getElementById('progressFill').style.width = (current / 8 * 100) + '%';
-  document.getElementById('progressLabel').textContent = current + ' / 8';
+  document.getElementById('progressFill').style.width = (current / QUESTION_COUNT * 100) + '%';
+  document.getElementById('progressLabel').textContent = current + ' / ' + QUESTION_COUNT;
   const tc = document.getElementById('targetChar');
   tc.textContent = q.target;
+  tc.onclick = () => speak(q.target);
   tc.style.animation = 'none';
   void tc.offsetWidth;
   tc.style.animation = 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
   document.getElementById('qInstruction').textContent = `"${q.target}" 을 찾아봐요! 👆`;
+  speak(`${q.target} 찾아봐요`);
 
   // Build choices: 1 correct + 7 random others
   const others = shuffle(q.pool.filter(c => c !== q.target)).slice(0, 7);
@@ -542,9 +560,13 @@ function showQuestion() {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
     btn.textContent = ch;
-    btn.onclick = () => handleChoice(btn, ch, q.target);
+    btn.onclick = () => { speak(ch); handleChoice(btn, ch, q.target); };
     grid.appendChild(btn);
   });
+}
+
+function replayQuestion() {
+  speak(`${questions[current].target} 찾아봐요`);
 }
 
 function handleChoice(btn, chosen, target) {
@@ -558,6 +580,7 @@ function handleChoice(btn, chosen, target) {
     document.getElementById('scoreDisplay').textContent = score;
     document.getElementById('star' + current).classList.add('earned');
     playSound(true);
+    playFanfare();
     spawnConfetti();
     setTimeout(() => showDancer(), 300);
   } else {
@@ -571,7 +594,7 @@ function handleChoice(btn, chosen, target) {
 
 function nextQuestion() {
   current++;
-  if (current >= 8) { showResult(); return; }
+  if (current >= QUESTION_COUNT) { showResult(); return; }
   showQuestion();
 }
 
@@ -609,6 +632,16 @@ function spawnConfetti() {
 
 // ──── Sound (Web Audio) ────
 let audioCtx;
+function speak(text) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ko-KR';
+    u.rate = 0.85;
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
 function playSound(correct) {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -626,6 +659,23 @@ function playSound(correct) {
     gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
     osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+function playFanfare() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523, 659, 784, 1046];
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.09);
+      gain.gain.setValueAtTime(0.16, audioCtx.currentTime + i * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.09 + 0.22);
+      osc.start(audioCtx.currentTime + i * 0.09);
+      osc.stop(audioCtx.currentTime + i * 0.09 + 0.24);
+    });
   } catch(e) {}
 }
 
