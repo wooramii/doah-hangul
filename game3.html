@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>그림 매칭 🖼️ | 도아의 한글놀이</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Round+Square:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink-deep: #E91E8C;
+    --pink-main: #FF6BB5;
+    --pink-light: #FFB3D9;
+    --pink-pale: #FFF0F7;
+    --pink-bg: #FFF5FA;
+    --yellow: #FFE066;
+    --mint: #A8EDCF;
+    --white: #FFFFFF;
+    --text-dark: #3D1A2E;
+    --text-mid: #7A3A5C;
+    --shadow: rgba(233,30,140,0.18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nanum Round Square', sans-serif; background: var(--pink-bg); min-height: 100vh; }
+
+  .topbar { background: white; border-bottom: 3px solid var(--pink-light); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px var(--shadow); }
+  .back-btn { background: var(--pink-pale); border: 2px solid var(--pink-light); border-radius: 50%; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--pink-deep); text-decoration: none; }
+  .topbar-title { font-size: 1.05rem; font-weight: 800; color: var(--text-dark); }
+  .topbar-score { font-size: 0.95rem; font-weight: 700; color: var(--pink-deep); background: var(--pink-pale); padding: 4px 12px; border-radius: 20px; }
+
+  .container { max-width: 600px; margin: 0 auto; padding: 20px 16px 60px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+  .progress-row { width: 100%; display: flex; align-items: center; gap: 10px; }
+  .progress-bar { flex: 1; height: 12px; background: var(--pink-light); border-radius: 20px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--mint), #2ECC71); border-radius: 20px; transition: width 0.4s; }
+  .progress-label { font-size: 0.8rem; font-weight: 700; color: var(--text-mid); white-space: nowrap; }
+
+  .stars-row { display: flex; gap: 8px; font-size: 1.6rem; }
+  .star { opacity: 0.25; transition: all 0.3s; }
+  .star.earned { opacity: 1; animation: starPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes starPop { 0%{transform:scale(0);} 60%{transform:scale(1.3);} 100%{transform:scale(1);} }
+
+  /* Picture card */
+  .picture-card {
+    background: white; border-radius: 28px; padding: 28px 20px 20px;
+    width: 100%; text-align: center;
+    box-shadow: 0 6px 24px var(--shadow); border: 3px solid var(--mint);
+    position: relative; overflow: hidden;
+  }
+  .picture-card::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background: linear-gradient(90deg, var(--mint), var(--pink-main), var(--yellow)); }
+  .pic-emoji { font-size: 5rem; animation: picPop 0.4s cubic-bezier(0.34,1.56,0.64,1); display: inline-block; line-height: 1; margin-bottom: 8px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.12)); }
+  @keyframes picPop { 0%{transform:scale(0.3) rotate(-15deg);opacity:0;} 100%{transform:scale(1) rotate(0);opacity:1;} }
+  .pic-hint { font-size: 0.85rem; color: var(--text-mid); margin-bottom: 4px; }
+  .pic-question { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); }
+
+  /* Word choices */
+  .word-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .word-btn {
+    background: white; border: 3px solid var(--pink-light); border-radius: 20px;
+    padding: 18px 8px; font-size: 1.5rem; font-weight: 800; color: var(--text-dark);
+    cursor: pointer; text-align: center; font-family: 'Nanum Round Square', sans-serif;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .word-btn:hover:not(:disabled) { transform: scale(1.04); border-color: var(--mint); background: #F0FFF8; }
+  .word-btn .word-text { display: block; font-size: 1.4rem; }
+  .word-btn .word-emoji { display: block; font-size: 0.85rem; margin-top: 4px; color: var(--text-mid); }
+  .word-btn.correct { background: #A8EDCF; border-color: #2ECC71; animation: correctPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .word-btn.wrong { background: #FFD5D5; border-color: #E74C3C; animation: shake 0.4s; }
+  @keyframes correctPop { 0%{transform:scale(1);} 50%{transform:scale(1.08);} 100%{transform:scale(1);} }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+
+  /* Result */
+  .result-screen { display:none; flex-direction:column; align-items:center; gap:20px; width:100%; animation:fadeIn 0.5s; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
+  .result-screen.show { display:flex; }
+  .result-card { background:white; border-radius:32px; padding:32px 24px; width:100%; text-align:center; box-shadow:0 8px 32px var(--shadow); border:3px solid var(--mint); }
+  .result-emoji { font-size:4rem; display:block; margin-bottom:12px; }
+  .result-title { font-size:1.8rem; font-weight:800; color:var(--pink-deep); margin-bottom:6px; }
+  .result-sub { font-size:1rem; color:var(--text-mid); margin-bottom:16px; }
+  .result-score-big { font-size:3rem; font-weight:800; color:var(--pink-deep); background:var(--pink-pale); border-radius:20px; padding:10px 30px; display:inline-block; margin-bottom:8px; }
+  .result-stars { font-size:2rem; letter-spacing:4px; margin-bottom:16px; }
+  .result-record { font-size:0.85rem; color:var(--text-mid); background:var(--pink-pale); border-radius:12px; padding:8px 16px; margin-bottom:20px; }
+  .btn-row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .btn { padding:12px 28px; border-radius:50px; font-size:1rem; font-weight:800; border:none; cursor:pointer; font-family:'Nanum Round Square',sans-serif; transition:transform 0.15s; box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+  .btn:hover { transform:translateY(-2px); }
+  .btn-primary { background:linear-gradient(135deg,var(--pink-main),var(--pink-deep)); color:white; }
+  .btn-secondary { background:white; color:var(--pink-deep); border:2px solid var(--pink-light); }
+
+  .dancer-overlay { display:none; position:fixed; inset:0; background:rgba(255,240,247,0.85); backdrop-filter:blur(4px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+  .dancer-overlay.show { display:flex; }
+  .dancer-char { width:180px; height:180px; animation:danceBounce 0.5s ease-in-out infinite alternate; filter:drop-shadow(0 8px 24px rgba(233,30,140,0.3)); }
+  @keyframes danceBounce { 0%{transform:translateY(0) rotate(-8deg) scale(1);} 100%{transform:translateY(-20px) rotate(8deg) scale(1.08);} }
+  .dancer-text { font-size:1.4rem; font-weight:800; color:var(--pink-deep); text-align:center; animation:pulse2 0.6s ease-in-out infinite alternate; }
+  @keyframes pulse2 { 0%{transform:scale(1);} 100%{transform:scale(1.08);} }
+  .dancer-btn { padding:12px 36px; background:linear-gradient(135deg,var(--pink-main),var(--pink-deep)); color:white; border:none; border-radius:50px; font-size:1.1rem; font-weight:800; cursor:pointer; font-family:'Nanum Round Square',sans-serif; }
+
+  .confetti-piece { position:fixed; pointer-events:none; z-index:200; animation:confettiFall linear forwards; }
+  @keyframes confettiFall { 0%{transform:translateY(-20px) rotate(0);opacity:1;} 100%{transform:translateY(100vh) rotate(720deg);opacity:0;} }
+
+  .game-area { display:flex; flex-direction:column; align-items:center; gap:18px; width:100%; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="back-btn">←</a>
+  <div class="topbar-title">🖼️ 그림 매칭</div>
+  <div class="topbar-score">⭐ <span id="scoreDisplay">0</span></div>
+</div>
+
+<div class="container">
+  <div class="game-area" id="gameArea">
+    <div class="progress-row">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 8</div>
+    </div>
+    <div class="stars-row" id="starsRow"></div>
+
+    <div class="picture-card">
+      <div class="pic-hint">이 그림의 이름을 골라봐요!</div>
+      <div class="pic-emoji" id="picEmoji">🍎</div>
+      <div class="pic-question" id="picQuestion">이것의 이름은 무엇일까요?</div>
+    </div>
+
+    <div class="word-grid" id="wordGrid"></div>
+  </div>
+
+  <div class="result-screen" id="resultScreen">
+    <div class="result-card">
+      <span class="result-emoji" id="resultEmoji">🎉</span>
+      <div class="result-title" id="resultTitle">잘했어요!</div>
+      <div class="result-sub" id="resultSub">도아가 정말 대단해요!</div>
+      <div class="result-score-big"><span id="finalScore">0</span>점</div>
+      <div class="result-stars" id="resultStars"></div>
+      <div class="result-record" id="resultRecord">최고 기록: —점</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="restartGame()">🔄 다시 하기</button>
+        <a href="index.html" class="btn btn-secondary">🏠 홈으로</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dancer-overlay" id="dancerOverlay">
+  <svg class="dancer-char" id="dancerChar" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="dancer-text" id="dancerText">🎉 정답이에요! 🎉</div>
+  <button class="dancer-btn" onclick="closeDancer()">계속하기 ▶</button>
+</div>
+
+<script>
+const CHARACTERS = [
+  { name: '하츄핑', svgBody: `<ellipse cx="100" cy="130" rx="45" ry="52" fill="#FF6BB5"/><ellipse cx="100" cy="78" rx="38" ry="36" fill="#FFD6EC"/><ellipse cx="68" cy="52" rx="14" ry="18" fill="#FF6BB5" transform="rotate(-20,68,52)"/><ellipse cx="132" cy="52" rx="14" ry="18" fill="#FF6BB5" transform="rotate(20,132,52)"/><ellipse cx="68" cy="52" rx="8" ry="11" fill="#FFB3D9" transform="rotate(-20,68,52)"/><ellipse cx="132" cy="52" rx="8" ry="11" fill="#FFB3D9" transform="rotate(20,132,52)"/><circle cx="86" cy="76" r="6" fill="#3D1A2E"/><circle cx="114" cy="76" r="6" fill="#3D1A2E"/><circle cx="88" cy="74" r="2.5" fill="white"/><circle cx="116" cy="74" r="2.5" fill="white"/><ellipse cx="100" cy="86" rx="8" ry="5" fill="#FF4499"/><path d="M92 90 Q100 97 108 90" stroke="#CC0066" stroke-width="2" fill="none"/><ellipse cx="78" cy="84" rx="9" ry="6" fill="#FFB3D9" opacity="0.7"/><ellipse cx="122" cy="84" rx="9" ry="6" fill="#FFB3D9" opacity="0.7"/><ellipse cx="55" cy="118" rx="22" ry="12" fill="#FFD6EC" opacity="0.85" transform="rotate(-30,55,118)"/><ellipse cx="145" cy="118" rx="22" ry="12" fill="#FFD6EC" opacity="0.85" transform="rotate(30,145,118)"/><line x1="60" y1="125" x2="38" y2="100" stroke="#FF6BB5" stroke-width="8" stroke-linecap="round"/><line x1="140" y1="125" x2="162" y2="100" stroke="#FF6BB5" stroke-width="8" stroke-linecap="round"/><line x1="88" y1="178" x2="82" y2="205" stroke="#FF6BB5" stroke-width="8" stroke-linecap="round"/><line x1="112" y1="178" x2="118" y2="205" stroke="#FF6BB5" stroke-width="8" stroke-linecap="round"/>` },
+  { name: '나나핑', svgBody: `<ellipse cx="100" cy="130" rx="45" ry="52" fill="#A8EDCF"/><ellipse cx="100" cy="78" rx="38" ry="36" fill="#D0FFF0"/><ellipse cx="70" cy="48" rx="13" ry="20" fill="#A8EDCF" transform="rotate(-15,70,48)"/><ellipse cx="130" cy="48" rx="13" ry="20" fill="#A8EDCF" transform="rotate(15,130,48)"/><ellipse cx="70" cy="48" rx="7" ry="13" fill="#D0FFF0" transform="rotate(-15,70,48)"/><ellipse cx="130" cy="48" rx="7" ry="13" fill="#D0FFF0" transform="rotate(15,130,48)"/><path d="M81 73 Q86 80 91 73" stroke="#3D1A2E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M109 73 Q114 80 119 73" stroke="#3D1A2E" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="86" cy="68" r="3" fill="#3D1A2E"/><circle cx="114" cy="68" r="3" fill="#3D1A2E"/><ellipse cx="100" cy="87" rx="8" ry="5" fill="#2ECC71"/><path d="M93 91 Q100 97 107 91" stroke="#27AE60" stroke-width="2" fill="none"/><ellipse cx="78" cy="84" rx="9" ry="6" fill="#B8F5D8" opacity="0.8"/><ellipse cx="122" cy="84" rx="9" ry="6" fill="#B8F5D8" opacity="0.8"/><ellipse cx="52" cy="118" rx="23" ry="12" fill="#D0FFF0" opacity="0.85" transform="rotate(-28,52,118)"/><ellipse cx="148" cy="118" rx="23" ry="12" fill="#D0FFF0" opacity="0.85" transform="rotate(28,148,118)"/><line x1="58" y1="122" x2="36" y2="97" stroke="#A8EDCF" stroke-width="8" stroke-linecap="round"/><line x1="142" y1="122" x2="164" y2="97" stroke="#A8EDCF" stroke-width="8" stroke-linecap="round"/><line x1="88" y1="178" x2="82" y2="205" stroke="#A8EDCF" stroke-width="8" stroke-linecap="round"/><line x1="112" y1="178" x2="118" y2="205" stroke="#A8EDCF" stroke-width="8" stroke-linecap="round"/>` },
+  { name: '라라핑', svgBody: `<ellipse cx="100" cy="130" rx="45" ry="52" fill="#FFD700"/><ellipse cx="100" cy="78" rx="38" ry="36" fill="#FFFACD"/><circle cx="68" cy="50" r="18" fill="#FFD700"/><circle cx="132" cy="50" r="18" fill="#FFD700"/><circle cx="68" cy="50" r="11" fill="#FFF0A0"/><circle cx="132" cy="50" r="11" fill="#FFF0A0"/><ellipse cx="86" cy="75" rx="6" ry="7" fill="#3D1A2E"/><ellipse cx="114" cy="75" rx="6" ry="7" fill="#3D1A2E"/><ellipse cx="87.5" cy="73" rx="2.5" ry="3" fill="white"/><ellipse cx="115.5" cy="73" rx="2.5" ry="3" fill="white"/><ellipse cx="100" cy="87" rx="7" ry="4.5" fill="#FF8800"/><path d="M93 91 Q100 97 107 91" stroke="#CC6600" stroke-width="2" fill="none"/><ellipse cx="78" cy="84" rx="9" ry="6" fill="#FFE599" opacity="0.8"/><ellipse cx="122" cy="84" rx="9" ry="6" fill="#FFE599" opacity="0.8"/><ellipse cx="52" cy="120" rx="23" ry="12" fill="#FFF0A0" opacity="0.85" transform="rotate(-28,52,120)"/><ellipse cx="148" cy="120" rx="23" ry="12" fill="#FFF0A0" opacity="0.85" transform="rotate(28,148,120)"/><line x1="58" y1="122" x2="36" y2="96" stroke="#FFD700" stroke-width="8" stroke-linecap="round"/><line x1="142" y1="122" x2="164" y2="96" stroke="#FFD700" stroke-width="8" stroke-linecap="round"/><line x1="88" y1="178" x2="82" y2="205" stroke="#FFD700" stroke-width="8" stroke-linecap="round"/><line x1="112" y1="178" x2="118" y2="205" stroke="#FFD700" stroke-width="8" stroke-linecap="round"/>` }
+];
+
+const ALL_QUESTIONS = [
+  { emoji:'🍎', answer:'사과', distractors:['바나나','포도','수박'] },
+  { emoji:'🐶', answer:'강아지', distractors:['고양이','토끼','곰'] },
+  { emoji:'🌸', answer:'꽃', distractors:['나무','풀','구름'] },
+  { emoji:'🚗', answer:'자동차', distractors:['비행기','배','기차'] },
+  { emoji:'🐱', answer:'고양이', distractors:['강아지','토끼','새'] },
+  { emoji:'🍌', answer:'바나나', distractors:['사과','딸기','포도'] },
+  { emoji:'⭐', answer:'별', distractors:['달','해','구름'] },
+  { emoji:'🦋', answer:'나비', distractors:['벌','개미','새'] },
+  { emoji:'🌈', answer:'무지개', distractors:['구름','비','눈'] },
+  { emoji:'🐰', answer:'토끼', distractors:['곰','사자','코끼리'] },
+  { emoji:'🍓', answer:'딸기', distractors:['포도','수박','복숭아'] },
+  { emoji:'🎀', answer:'리본', distractors:['꽃','별','하트'] },
+];
+
+let questions, current, score, correctCount;
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+
+function initGame() {
+  questions = shuffle(ALL_QUESTIONS).slice(0,8);
+  current=0; score=0; correctCount=0;
+  document.getElementById('gameArea').style.display='flex';
+  document.getElementById('resultScreen').classList.remove('show');
+  document.getElementById('scoreDisplay').textContent='0';
+  const sr=document.getElementById('starsRow'); sr.innerHTML='';
+  for(let i=0;i<8;i++){const s=document.createElement('span');s.className='star';s.textContent='⭐';s.id='star'+i;sr.appendChild(s);}
+  showQuestion();
+}
+
+function showQuestion() {
+  const q=questions[current];
+  document.getElementById('progressFill').style.width=(current/8*100)+'%';
+  document.getElementById('progressLabel').textContent=current+' / 8';
+  const pe=document.getElementById('picEmoji');
+  pe.textContent=q.emoji; pe.style.animation='none'; void pe.offsetWidth; pe.style.animation='picPop 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+  document.getElementById('picQuestion').textContent='이것의 이름은 무엇일까요?';
+
+  const choices=shuffle([q.answer,...shuffle(q.distractors).slice(0,3)]);
+  const grid=document.getElementById('wordGrid'); grid.innerHTML='';
+  choices.forEach(ch=>{
+    const btn=document.createElement('button'); btn.className='word-btn';
+    btn.innerHTML=`<span class="word-text">${ch}</span>`;
+    btn.onclick=()=>handleChoice(btn,ch,q.answer);
+    grid.appendChild(btn);
+  });
+}
+
+function handleChoice(btn,chosen,answer) {
+  document.querySelectorAll('.word-btn').forEach(b=>b.disabled=true);
+  if(chosen===answer){
+    btn.classList.add('correct'); score+=10; correctCount++;
+    document.getElementById('scoreDisplay').textContent=score;
+    document.getElementById('star'+current).classList.add('earned');
+    playSound(true); spawnConfetti(); setTimeout(showDancer,300);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.word-btn').forEach(b=>{if(b.querySelector('.word-text').textContent===answer) b.classList.add('correct');});
+    playSound(false); setTimeout(nextQuestion,1400);
+  }
+}
+
+function nextQuestion(){current++;if(current>=8){showResult();return;}showQuestion();}
+
+function showDancer(){
+  const char=CHARACTERS[Math.floor(Math.random()*CHARACTERS.length)];
+  document.getElementById('dancerChar').innerHTML=char.svgBody;
+  document.getElementById('dancerText').textContent=`🎉 맞았어요! "${questions[current].answer}" 정답! 🎉`;
+  document.getElementById('dancerOverlay').classList.add('show');
+}
+function closeDancer(){document.getElementById('dancerOverlay').classList.remove('show');setTimeout(nextQuestion,100);}
+
+function spawnConfetti(){
+  const colors=['#FF6BB5','#FFE066','#A8EDCF','#C9B1F5','#FF9966'];
+  for(let i=0;i<22;i++){
+    const el=document.createElement('div');el.className='confetti-piece';
+    el.style.left=Math.random()*100+'vw';el.style.top='-20px';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.width=el.style.height=(6+Math.random()*8)+'px';
+    el.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    el.style.animationDuration=(1.2+Math.random()*1.5)+'s';
+    el.style.animationDelay=Math.random()*0.5+'s';
+    document.body.appendChild(el);setTimeout(()=>el.remove(),3000);
+  }
+}
+let audioCtx;
+function playSound(correct){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    if(correct){osc.frequency.setValueAtTime(523,audioCtx.currentTime);osc.frequency.setValueAtTime(659,audioCtx.currentTime+0.1);osc.frequency.setValueAtTime(784,audioCtx.currentTime+0.2);}
+    else{osc.frequency.setValueAtTime(300,audioCtx.currentTime);osc.frequency.setValueAtTime(250,audioCtx.currentTime+0.15);}
+    gain.gain.setValueAtTime(0.3,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
+    osc.start();osc.stop(audioCtx.currentTime+0.4);
+  }catch(e){}
+}
+function showResult(){
+  document.getElementById('gameArea').style.display='none';
+  document.getElementById('resultScreen').classList.add('show');
+  document.getElementById('finalScore').textContent=score;
+  const stars=correctCount>=7?'⭐⭐⭐':correctCount>=5?'⭐⭐':'⭐';
+  document.getElementById('resultStars').textContent=stars;
+  let emoji,title,sub;
+  if(score>=70){emoji='🎊';title='완벽해요!';sub='도아가 단어 천재야!';}
+  else if(score>=50){emoji='🌟';title='잘했어요!';sub='정말 열심히 했어요!';}
+  else{emoji='💪';title='조금만 더!';sub='다시 해보면 더 잘할 수 있어요!';}
+  document.getElementById('resultEmoji').textContent=emoji;
+  document.getElementById('resultTitle').textContent=title;
+  document.getElementById('resultSub').textContent=sub;
+  const prev=parseInt(localStorage.getItem('doah_game3_best')||'0');
+  const isNew=score>prev;if(isNew)localStorage.setItem('doah_game3_best',score);
+  document.getElementById('resultRecord').textContent=isNew?`🏆 새 최고 기록! ${score}점`:`최고 기록: ${prev}점`;
+  const ts=parseInt(localStorage.getItem('doah_total_stars')||'0');localStorage.setItem('doah_total_stars',ts+correctCount);
+  const tg=parseInt(localStorage.getItem('doah_total_games')||'0');localStorage.setItem('doah_total_games',tg+1);
+}
+function restartGame(){initGame();}
+initGame();
+</script>
+</body>
+</html>
