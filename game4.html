@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>따라 쓰기 ✏️ | 도아의 한글놀이</title>
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Round+Square:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -32,7 +32,7 @@
   .progress-fill { height: 100%; background: linear-gradient(90deg, var(--yellow), #FF8800); border-radius: 20px; transition: width 0.4s; }
   .progress-label { font-size: 0.8rem; font-weight: 700; color: var(--text-mid); white-space: nowrap; }
 
-  .stars-row { display: flex; gap: 8px; font-size: 1.6rem; }
+  .stars-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 1.15rem; }
   .star { opacity: 0.25; transition: all 0.3s; }
   .star.earned { opacity: 1; animation: starPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes starPop { 0%{transform:scale(0);}60%{transform:scale(1.3);}100%{transform:scale(1);} }
@@ -52,7 +52,7 @@
 
   /* Canvas area */
   .canvas-card {
-    background: white; border-radius: 24px; padding: 16px;
+    background: white; border-radius: 8px; padding: 8px;
     width: 100%;
     box-shadow: 0 6px 20px var(--shadow); border: 3px solid var(--pink-light);
     display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -61,13 +61,20 @@
   .canvas-hint { font-size: 0.85rem; color: var(--text-mid); text-align: center; }
 
   .canvas-wrap {
-    position: relative; width: 100%; max-width: 300px;
-    border-radius: 16px; overflow: hidden;
-    border: 3px dashed var(--pink-light);
-    background: #FFFAF0;
+    position: relative; width: 100%; max-width: 520px; aspect-ratio: 1;
+    border-radius: 4px; overflow: hidden;
+    border: 3px solid #D989B1;
+    background: white;
     cursor: crosshair;
   }
-  canvas { display: block; width: 100%; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #guideCanvas { position: absolute; inset: 0; pointer-events: none; }
+  #drawCanvas { position: relative; touch-action: none; }
+  .action-btn { min-height: 48px; }
+  .action-btn:disabled { opacity: 0.6; cursor: default; }
+  button:focus-visible, a:focus-visible { outline: 3px solid #167D9A; outline-offset: 3px; }
+  @media (max-width: 480px) { .container { padding-inline: 8px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
   /* Guide char behind canvas */
   .guide-char {
@@ -153,12 +160,12 @@
     <div class="canvas-card">
       <div class="canvas-hint">손가락으로 글자를 따라 그려봐요 ✏️</div>
       <div class="canvas-wrap" id="canvasWrap">
-        <div class="guide-char" id="guideChar">가</div>
-        <canvas id="drawCanvas" width="300" height="300"></canvas>
+        <canvas id="guideCanvas" width="400" height="400" aria-hidden="true"></canvas>
+        <canvas id="drawCanvas" width="400" height="400" aria-label="글자 따라 쓰기 영역"></canvas>
       </div>
       <div class="coverage-bar-wrap">
         <div class="coverage-label">얼마나 썼나요? <span id="coveragePct">0</span>%</div>
-        <div class="coverage-bar"><div class="coverage-fill" id="coverageFill"></div></div>
+        <div class="coverage-bar" role="progressbar" aria-label="글자 완성도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="coverageMeter"><div class="coverage-fill" id="coverageFill"></div></div>
       </div>
       <div class="canvas-actions">
         <button class="action-btn" onclick="clearCanvas()">🗑️ 지우기</button>
@@ -196,51 +203,201 @@ const CHARACTERS = [
   { name:'마시핑', svgBody:`<ellipse cx="100" cy="130" rx="45" ry="52" fill="#FF9966"/><ellipse cx="100" cy="78" rx="38" ry="36" fill="#FFE8D5"/><circle cx="70" cy="48" r="20" fill="#FF9966"/><circle cx="130" cy="48" r="20" fill="#FF9966"/><circle cx="70" cy="48" r="12" fill="#FFD5B8"/><circle cx="130" cy="48" r="12" fill="#FFD5B8"/><circle cx="86" cy="76" r="6" fill="#3D1A2E"/><circle cx="114" cy="76" r="6" fill="#3D1A2E"/><circle cx="88" cy="74" r="2.5" fill="white"/><circle cx="116" cy="74" r="2.5" fill="white"/><circle cx="100" cy="88" r="6" fill="#CC4400"/><path d="M93 92 Q100 99 107 92" stroke="#992200" stroke-width="2" fill="none"/><ellipse cx="78" cy="84" rx="9" ry="6" fill="#FFB899" opacity="0.8"/><ellipse cx="122" cy="84" rx="9" ry="6" fill="#FFB899" opacity="0.8"/><ellipse cx="52" cy="120" rx="23" ry="12" fill="#FFD5B8" opacity="0.85" transform="rotate(-28,52,120)"/><ellipse cx="148" cy="120" rx="23" ry="12" fill="#FFD5B8" opacity="0.85" transform="rotate(28,148,120)"/><line x1="58" y1="122" x2="36" y2="97" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/><line x1="142" y1="122" x2="164" y2="97" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/><line x1="88" y1="178" x2="82" y2="205" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/><line x1="112" y1="178" x2="118" y2="205" stroke="#FF9966" stroke-width="8" stroke-linecap="round"/>` }
 ];
 
-const ALL_QUESTIONS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하','고','도','모','보','소','우'];
+const QUESTION_GROUPS = [
+  ['가','나','다','라','마','바','사','아','자','차','카','타','파','하'],
+  ['거','너','더','러','머','버','서','어','저','처','커','터','퍼','허'],
+  ['고','노','도','로','모','보','소','오','조','초','코','토','포','호'],
+  ['구','누','두','루','무','부','수','우','주','추','쿠','투','푸','후'],
+  ['기','니','디','리','미','비','시','이','지','치','키','티','피','히']
+];
+const ALL_QUESTIONS = QUESTION_GROUPS.flat();
 const QUESTION_COUNT = 12;
 
 let questions, current, score, correctCount;
 let isDrawing = false, lastX = 0, lastY = 0;
-let filledPixels = 0;
-const CANVAS_SIZE = 300;
-const THRESHOLD = 12; // % coverage needed to pass
+let coverage = 0, answered = false, activePointer = null;
+let strokeSamples = [], glyphSamples = [], guideStrokes = [];
+const CANVAS_SIZE = 400;
+const HIT_RADIUS = 15;
+const STROKE_HIT_RADIUS = 10;
+const GLYPH_COMPLETION_RATIO = 0.80;
 
-function shuffle(arr){return [...arr].sort(()=>Math.random()-0.5);}
+// One continuous point list per pen stroke, in writing order.
+const circleStroke = (cx,cy,rx,ry) => Array.from({length:65},(_,i)=>{
+  const angle=-Math.PI/2-i*Math.PI*2/64;
+  return [cx+rx*Math.cos(angle),cy+ry*Math.sin(angle)];
+});
+const giyeokStroke = [
+  ...Array.from({length:13},(_,i)=>[0.22+0.78*i/12,0]),
+  ...Array.from({length:17},(_,i)=>{
+    const t=(i+1)/17, u=1-t;
+    return [u*u+2*u*t*0.92,2*u*t*0.55+t*t];
+  })
+];
+const CONSONANT_STROKES = {
+  'ㄱ': [giyeokStroke],
+  'ㄴ': [[[0,0],[0,1],[1,1]]],
+  'ㄷ': [[[0,0],[1,0]],[[0,0],[0,1],[1,1]]],
+  'ㄹ': [[[0,0],[1,0],[1,0.5]],[[0,0.5],[1,0.5]],[[0,0.5],[0,1],[1,1]]],
+  'ㅁ': [[[0,0],[0,1]],[[0,0],[1,0],[1,1]],[[0,1],[1,1]]],
+  'ㅂ': [[[0,0],[0,1]],[[1,0],[1,1]],[[0,0.48],[1,0.48]],[[0,1],[1,1]]],
+  'ㅅ': [[[0.5,0],[0.38,0.55],[0,1]],[[0.5,0.25],[1,1]]],
+  'ㅇ': [circleStroke(0.5,0.5,0.5,0.5)],
+  'ㅈ': [[[0,0],[1,0]],[[0.5,0.08],[0,1]],[[0.5,0.08],[1,1]]],
+  'ㅊ': [[[0.48,0],[0.58,0.12]],[[0,0.28],[1,0.28]],[[0.5,0.32],[0,1]],[[0.5,0.32],[1,1]]],
+  'ㅋ': [[[0,0],[1,0],[1,1]],[[0,0.5],[1,0.5]]],
+  'ㅌ': [[[0,0],[1,0]],[[0,0.5],[1,0.5]],[[0,0],[0,1],[1,1]]],
+  'ㅍ': [[[0,0],[1,0]],[[0.23,0],[0.23,1]],[[0.77,0],[0.77,1]],[[0,1],[1,1]]],
+  'ㅎ': [[[0.45,0],[0.55,0.1]],[[0,0.25],[1,0.25]],circleStroke(0.5,0.7,0.4,0.3)]
+};
+
+function getGuideStrokes(char){
+  const code=char.charCodeAt(0)-0xAC00;
+  const consonant='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'[Math.floor(code/588)];
+  const vowel=Math.floor(code%588/28);
+  const horizontal=vowel===8||vowel===13;
+  const box=horizontal?[95,50,210,165]:[55,85,145,225];
+  const strokes=CONSONANT_STROKES[consonant].map(points=>points.map(([x,y])=>[box[0]+x*box[2],box[1]+y*box[3]]));
+  if(vowel===0) strokes.push([[280,55],[280,345]],[[280,200],[345,200]]);
+  else if(vowel===4) strokes.push([[255,200],[320,200]],[[320,55],[320,345]]);
+  else if(vowel===8) strokes.push([[200,260],[200,325]],[[55,325],[345,325]]);
+  else if(vowel===13) strokes.push([[55,280],[345,280]],[[200,280],[200,350]]);
+  else if(vowel===20) strokes.push([[300,55],[300,345]]);
+  return strokes;
+}
+
+function sampleStroke(points){
+  const samples=[];
+  for(let i=1;i<points.length;i++){
+    const [ax,ay]=points[i-1], [bx,by]=points[i];
+    const steps=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/4));
+    for(let j=0;j<steps;j++) samples.push({x:ax+(bx-ax)*j/steps,y:ay+(by-ay)*j/steps,hit:false});
+  }
+  const [x,y]=points[points.length-1];
+  samples.push({x,y,hit:false});
+  return samples;
+}
+
+function shuffle(arr){
+  const result=[...arr];
+  for(let i=result.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [result[i],result[j]]=[result[j],result[i]];
+  }
+  return result;
+}
 
 // Canvas setup
 const canvas = document.getElementById('drawCanvas');
 const ctx = canvas.getContext('2d');
+const guideCtx = document.getElementById('guideCanvas').getContext('2d');
+const glyphCanvas = document.createElement('canvas');
+glyphCanvas.width = glyphCanvas.height = CANVAS_SIZE;
+const glyphCtx = glyphCanvas.getContext('2d');
 canvas.width = CANVAS_SIZE;
 canvas.height = CANVAS_SIZE;
 
 function setupCanvas(){
+  isDrawing=false;
+  if(activePointer!==null && canvas.hasPointerCapture(activePointer)) canvas.releasePointerCapture(activePointer);
+  activePointer=null;
   ctx.clearRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
-  ctx.strokeStyle = '#FF6BB5';
-  ctx.lineWidth = 18;
+  ctx.strokeStyle = '#E91E8C';
+  ctx.lineWidth = 10;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  filledPixels = 0;
+  strokeSamples=guideStrokes.map(sampleStroke);
+  glyphSamples.forEach(sample=>sample.hit=false);
   updateCoverage();
 }
 
-// Drawing events
+function drawGuide(){
+  const g=guideCtx;
+  g.clearRect(0,0,400,400);
+  // Four panes plus an inset writing boundary.
+  g.strokeStyle='#E5B7CE'; g.lineWidth=1.5; g.setLineDash([6,6]);
+  g.strokeRect(24,24,352,352);
+  g.beginPath(); g.moveTo(200,0); g.lineTo(200,400); g.moveTo(0,200); g.lineTo(400,200); g.stroke();
+  g.setLineDash([]); g.lineCap='round'; g.lineJoin='round';
+  // The visible tracing paths and the hit-test mask share exactly the same geometry.
+  glyphCtx.clearRect(0,0,400,400);
+  const tracePath=(context,points)=>{
+    context.beginPath();
+    context.moveTo(points[0][0],points[0][1]);
+    points.slice(1).forEach(([x,y])=>context.lineTo(x,y));
+    context.stroke();
+  };
+  glyphCtx.strokeStyle='#55AC35';
+  glyphCtx.lineWidth=29;
+  glyphCtx.lineCap='round';
+  glyphCtx.lineJoin='round';
+  guideStrokes.forEach(points=>tracePath(glyphCtx,points));
+  g.drawImage(glyphCanvas,0,0);
+  const pixels=glyphCtx.getImageData(0,0,400,400).data;
+  glyphSamples=[];
+  for(let y=2;y<400;y+=4){
+    for(let x=2;x<400;x+=4){
+      if(pixels[(y*400+x)*4+3]>40)glyphSamples.push({x,y,hit:false});
+    }
+  }
+  guideStrokes.forEach(points=>{
+    g.strokeStyle='white';
+    g.lineWidth=2.5;
+    g.setLineDash([1,6]);
+    tracePath(g,points);
+    g.setLineDash([]);
+    const closed=points.length>20&&Math.hypot(points[0][0]-points[points.length-1][0],points[0][1]-points[points.length-1][1])<20;
+    const arrowIndex=closed?Math.floor(points.length*0.88):points.length-1;
+    const [ex,ey]=points[arrowIndex];
+    const [bx,by]=points[Math.max(0,arrowIndex-2)];
+    const angle=Math.atan2(ey-by,ex-bx);
+    g.strokeStyle='white';g.lineWidth=3;g.beginPath();
+    g.moveTo(ex-11*Math.cos(angle-0.6),ey-11*Math.sin(angle-0.6));
+    g.lineTo(ex,ey);
+    g.lineTo(ex-11*Math.cos(angle+0.6),ey-11*Math.sin(angle+0.6));
+    g.stroke();
+  });
+  const labels=[];
+  guideStrokes.forEach((points,index)=>{
+    const path=sampleStroke(points);
+    const free=path.find(({x,y})=>x>=35&&x<=365&&y>=35&&y<=365&&labels.every(label=>Math.hypot(label.x-x,label.y-y)>=28));
+    const {x,y}=free||path.reduce((best,point)=>{
+      const gap=Math.min(...labels.map(label=>Math.hypot(label.x-point.x,label.y-point.y)),Infinity);
+      return gap>best.gap?{...point,gap}:best;
+    },{...path[0],gap:-1});
+    labels.push({x,y});
+    g.beginPath();g.fillStyle='white';g.strokeStyle='#368D23';g.lineWidth=1.5;
+    g.arc(x,y,10,0,Math.PI*2);g.fill();g.stroke();
+    g.fillStyle='#368D23';g.font='bold 14px sans-serif';g.textAlign='center';g.textBaseline='middle';
+    g.fillText(String(index+1),x,y+0.5);
+  });
+}
+
+// Pointer capture preserves strokes outside the board and handles touch cancellation.
 function getPos(e){
   const rect = canvas.getBoundingClientRect();
   const scaleX = CANVAS_SIZE / rect.width;
   const scaleY = CANVAS_SIZE / rect.height;
-  if(e.touches){
-    return { x:(e.touches[0].clientX-rect.left)*scaleX, y:(e.touches[0].clientY-rect.top)*scaleY };
-  }
   return { x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY };
 }
 
-canvas.addEventListener('mousedown',e=>{isDrawing=true;const p=getPos(e);lastX=p.x;lastY=p.y;});
-canvas.addEventListener('mousemove',e=>{if(!isDrawing)return;e.preventDefault();draw(e);});
-canvas.addEventListener('mouseup',()=>{isDrawing=false;ctx.beginPath();});
-canvas.addEventListener('mouseleave',()=>{isDrawing=false;ctx.beginPath();});
-canvas.addEventListener('touchstart',e=>{e.preventDefault();isDrawing=true;const p=getPos(e);lastX=p.x;lastY=p.y;},{passive:false});
-canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!isDrawing)return;draw(e);},{passive:false});
-canvas.addEventListener('touchend',()=>{isDrawing=false;ctx.beginPath();});
+canvas.addEventListener('pointerdown',e=>{
+  if(answered||activePointer!==null||(e.pointerType==='mouse'&&e.button!==0))return;
+  e.preventDefault(); activePointer=e.pointerId; isDrawing=true;
+  try{canvas.setPointerCapture(e.pointerId);}catch(error){}
+  const p=getPos(e); lastX=p.x; lastY=p.y; draw(e);
+});
+canvas.addEventListener('pointermove',e=>{if(isDrawing&&e.pointerId===activePointer){e.preventDefault();draw(e);}});
+function endStroke(e){
+  if(e.pointerId!==activePointer)return;
+  if(e.type==='pointerup'&&isDrawing)draw(e);
+  isDrawing=false; activePointer=null;
+  try{if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(error){}
+  if(e.type==='pointerup'&&coverage===100)checkDrawing();
+}
+canvas.addEventListener('pointerup',endStroke);
+canvas.addEventListener('pointercancel',endStroke);
+canvas.addEventListener('lostpointercapture',endStroke);
 
 function draw(e){
   const p=getPos(e);
@@ -248,65 +405,68 @@ function draw(e){
   ctx.moveTo(lastX,lastY);
   ctx.lineTo(p.x,p.y);
   ctx.stroke();
+  markSegment(lastX,lastY,p.x,p.y);
   lastX=p.x; lastY=p.y;
   updateCoverage();
 }
 
-function updateCoverage(){
-  const data=ctx.getImageData(0,0,CANVAS_SIZE,CANVAS_SIZE).data;
-  let filled=0;
-  for(let i=3;i<data.length;i+=4){if(data[i]>50)filled++;}
-  const total=CANVAS_SIZE*CANVAS_SIZE;
-  const pct=Math.min(100,Math.round(filled/total*100*4));
-  document.getElementById('coveragePct').textContent=pct;
-  document.getElementById('coverageFill').style.width=pct+'%';
+function markSegment(ax,ay,bx,by){
+  const dx=bx-ax,dy=by-ay,lengthSquared=dx*dx+dy*dy;
+  const mark=(sample,radius)=>{
+    if(sample.hit)return;
+    const t=lengthSquared?Math.max(0,Math.min(1,((sample.x-ax)*dx+(sample.y-ay)*dy)/lengthSquared)):0;
+    if(Math.hypot(sample.x-ax-t*dx,sample.y-ay-t*dy)<=radius)sample.hit=true;
+  };
+  strokeSamples.forEach(samples=>samples.forEach(sample=>mark(sample,STROKE_HIT_RADIUS)));
+  glyphSamples.forEach(sample=>mark(sample,HIT_RADIUS));
 }
 
-function clearCanvas(){ setupCanvas(); }
+function updateCoverage(){
+  const glyphRatio=glyphSamples.length?glyphSamples.filter(s=>s.hit).length/glyphSamples.length:0;
+  const strokeRatios=strokeSamples.map(samples=>samples.filter(s=>s.hit).length/samples.length);
+  const strokesComplete=strokeRatios.every(ratio=>ratio>=GLYPH_COMPLETION_RATIO);
+  const completed=glyphRatio>=GLYPH_COMPLETION_RATIO&&strokesComplete;
+  const glyphPct=Math.floor(Math.min(1,glyphRatio/GLYPH_COMPLETION_RATIO)*100);
+  const strokePct=Math.floor(strokeRatios.reduce((sum,ratio)=>sum+Math.min(1,ratio/GLYPH_COMPLETION_RATIO),0)/strokeRatios.length*100);
+  coverage=completed?100:Math.min(99,glyphPct,strokePct);
+  document.getElementById('coveragePct').textContent=coverage;
+  document.getElementById('coverageFill').style.width=coverage+'%';
+  document.getElementById('coverageMeter').setAttribute('aria-valuenow',coverage);
+}
+
+function clearCanvas(){ if(!answered)setupCanvas(); }
 
 function checkDrawing(){
-  const data=ctx.getImageData(0,0,CANVAS_SIZE,CANVAS_SIZE).data;
-  let filled=0;
-  for(let i=3;i<data.length;i+=4){if(data[i]>50)filled++;}
-  const total=CANVAS_SIZE*CANVAS_SIZE;
-  const pct=Math.round(filled/total*100*4);
-
-  if(pct >= THRESHOLD){
+  if(answered)return;
+  updateCoverage();
+  if(coverage === 100){
+    answered=true; isDrawing=false;
+    document.getElementById('checkBtn').disabled=true;
     score+=10; correctCount++;
     document.getElementById('scoreDisplay').textContent=score;
     document.getElementById('star'+current).classList.add('earned');
     playSound(true); playFanfare(); spawnConfetti();
-    // Flash canvas green
-    ctx.fillStyle='rgba(168,237,207,0.35)';
-    ctx.fillRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
+    speak('잘 썼어요');
     setTimeout(showDancer,400);
   } else {
-    // Too little drawn — shake and prompt
-    document.getElementById('canvasWrap').style.animation='shake 0.4s';
-    setTimeout(()=>document.getElementById('canvasWrap').style.animation='',500);
     playSound(false);
-    // Auto pass after hint
-    setTimeout(()=>{
-      score+=5; correctCount++;
-      document.getElementById('scoreDisplay').textContent=score;
-      document.getElementById('star'+current).classList.add('earned');
-      speak('잘했어요');
-      showDancer();
-    },800);
+    speak('아직 남은 획이 있어요. 조금 더 따라 써봐요');
   }
 }
 
-function nextQuestion(){current++;if(current>=QUESTION_COUNT){showResult();return;}setupCanvas();showQuestion();}
+function nextQuestion(){current++;if(current>=QUESTION_COUNT){showResult();return;}showQuestion();}
 
 function initGame(){
-  questions=shuffle(ALL_QUESTIONS).slice(0,QUESTION_COUNT);
+  const picks=QUESTION_GROUPS.map(group=>shuffle(group));
+  questions=shuffle(picks.flatMap(group=>group.slice(0,2)).concat(
+    shuffle(picks.flatMap(group=>group.slice(2))).slice(0,QUESTION_COUNT-QUESTION_GROUPS.length*2)
+  ));
   current=0;score=0;correctCount=0;
   document.getElementById('gameArea').style.display='flex';
   document.getElementById('resultScreen').classList.remove('show');
   document.getElementById('scoreDisplay').textContent='0';
   const sr=document.getElementById('starsRow');sr.innerHTML='';
   for(let i=0;i<QUESTION_COUNT;i++){const s=document.createElement('span');s.className='star';s.textContent='⭐';s.id='star'+i;sr.appendChild(s);}
-  setupCanvas();
   showQuestion();
 }
 
@@ -317,19 +477,35 @@ function showQuestion(){
   const tc=document.getElementById('targetChar');
   tc.textContent=q; tc.style.animation='none'; void tc.offsetWidth; tc.style.animation='popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
   tc.onclick=()=>speak(q);
-  document.getElementById('guideChar').textContent=q;
+  answered=false;
+  document.getElementById('checkBtn').disabled=false;
+  guideStrokes=getGuideStrokes(q);
+  drawGuide();
+  setupCanvas();
+  if(document.fonts&&document.fonts.ready){
+    const shownQuestion=current;
+    document.fonts.ready.then(()=>{if(current===shownQuestion&&coverage===0&&!isDrawing){drawGuide();setupCanvas();}});
+  }
   speak(`${q} 따라 써봐요`);
 }
 
 function replayQuestion(){speak(`${questions[current]} 따라 써봐요`);}
 
+let dancerTimer;
 function showDancer(){
   const char=CHARACTERS[Math.floor(Math.random()*CHARACTERS.length)];
   document.getElementById('dancerChar').innerHTML=char.svgBody;
   document.getElementById('dancerText').textContent=`🎉 "${questions[current]}" 멋지게 썼어요! ${char.name} 도 칭찬해요!`;
   document.getElementById('dancerOverlay').classList.add('show');
+  clearTimeout(dancerTimer);
+  dancerTimer=setTimeout(closeDancer,1400);
 }
-function closeDancer(){document.getElementById('dancerOverlay').classList.remove('show');setTimeout(nextQuestion,100);}
+function closeDancer(){
+  const overlay=document.getElementById('dancerOverlay');
+  if(!overlay.classList.contains('show'))return;
+  clearTimeout(dancerTimer);
+  overlay.classList.remove('show'); nextQuestion();
+}
 
 function spawnConfetti(){
   const colors=['#FF6BB5','#FFE066','#A8EDCF','#C9B1F5','#FF9966'];
