@@ -66,6 +66,8 @@
     border: 3px solid #D989B1;
     background: white;
     cursor: crosshair;
+    touch-action: none;
+    overscroll-behavior: contain;
   }
   canvas { display: block; width: 100%; height: 100%; }
   #guideCanvas { position: absolute; inset: 0; pointer-events: none; }
@@ -289,6 +291,8 @@ function shuffle(arr){
 
 // Canvas setup
 const canvas = document.getElementById('drawCanvas');
+const canvasWrap = document.getElementById('canvasWrap');
+['touchstart','touchmove'].forEach(type=>canvasWrap.addEventListener(type,e=>e.preventDefault(),{passive:false}));
 const ctx = canvas.getContext('2d');
 const guideCtx = document.getElementById('guideCanvas').getContext('2d');
 const glyphCanvas = document.createElement('canvas');
